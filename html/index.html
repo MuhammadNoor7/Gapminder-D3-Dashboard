@@ -1,1 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard 2: Gapminder Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard-container {
+            max-width: 1920px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .dashboard-header .stats {
+            display: flex;
+            gap: 30px;
+            font-size: 1.1em;
+        }
+        
+        .dashboard-header .stat-item {
+            text-align: center;
+        }
+        
+        .dashboard-header .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            display: block;
+        }
+        
+        .dashboard-header .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .dashboard-content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .dashboard-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .dashboard-card.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .card-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-icon {
+            font-size: 1.3em;
+        }
+        
+        #motion-chart, #choropleth-map {
+            width: 100%;
+            height: 500px;
+        }
+        
+        #controls {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            color: #555;
+            font-size: 1.1em;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .year-display {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #667eea;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .slider-wrapper {
+            position: relative;
+            padding: 20px 0;
+        }
+        
+        .slider-container {
+            width: 100%;
+            height: 60px;
+            position: relative;
+        }
+        
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        #hierarchy {
+            margin-top: 20px;
+        }
+        
+        .hierarchy-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+        
+        #sunburst-chart-container {
+            width: 100%;
+            height: 500px;
+            position: relative;
+            overflow: visible;
+        }
+        
+        #hierarchy {
+            position: relative;
+            overflow: visible;
+        }
+        
+        .continent-legend {
+            user-select: none;
+        }
+        
+        .continent-legend div:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+        
+        .population-legend {
+            transition: opacity 0.2s ease;
+        }
+        
+        .zoom-info {
+            transition: all 0.3s ease;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .axis {
+            font-size: 12px;
+        }
+        
+        .axis-label {
+            font-size: 14px;
+            font-weight: 600;
+            fill: #333;
+        }
+        
+        .country-bubble {
+            stroke: #fff;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+        
+        .country-bubble:hover {
+            stroke-width: 3;
+            opacity: 1 !important;
+        }
+        
+        .country-label {
+            font-size: 11px;
+            font-weight: 600;
+            fill: #333;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .tooltip.visible {
+            opacity: 1;
+        }
+        
+        .tooltip strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .legend {
+            font-size: 12px;
+        }
+        
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .country {
+            stroke: #fff;
+            stroke-width: 0.5;
+            cursor: pointer;
+        }
+        
+        .country:hover {
+            stroke-width: 1.5;
+            stroke: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <div>
+                <h1>🌍 Gapminder Visualization Dashboard</h1>
+                <p style="margin-top: 10px; opacity: 0.9;">GDP, Life Expectancy & Population Trends (1800-2100)</p>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="header-countries">0</span>
+                    <span class="stat-label">Countries</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="header-year">1800</span>
+                    <span class="stat-label">Year</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-content">
+            <!-- Motion Chart (Scatter Plot) -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">📊</span>
+                        Motion Chart (Scatter Plot)
+                    </div>
+                </div>
+                <div id="motion-chart"></div>
+            </div>
+            
+            <!-- Choropleth Map -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">🗺️</span>
+                        World Map (Life Expectancy)
+                    </div>
+                </div>
+                <div id="choropleth-map"></div>
+            </div>
+            
+            <!-- Interactive Controls -->
+            <div class="dashboard-card full-width">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">🎮</span>
+                        Interactive Controls
+                    </div>
+                </div>
+                <div id="controls">
+                    <div class="controls-panel">
+                        <div class="control-group">
+                            <label>Animation Control</label>
+                            <div class="button-group">
+                                <button id="play-pause">▶️ Play</button>
+                                <button id="reset-button">⏮️ Reset</button>
+                            </div>
+                            <div class="year-display">
+                                Year: <span id="current-year">1800</span>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>Time Scrubber (Drag to navigate through years)</label>
+                            <div class="slider-wrapper">
+                                <div class="slider-container" id="custom-slider-container"></div>
+                                <div class="slider-labels">
+                                    <span>1800</span>
+                                    <span>1900</span>
+                                    <span>2000</span>
+                                    <span>2100</span>
+                                </div>
+                            </div>
+                            <input type="range" id="year-slider" class="slider" min="1800" max="2100" value="1800" style="display: none;">
+                        </div>
+                    </div>
+                    <div id="hierarchy">
+                        <div class="hierarchy-title">
+                            <span>🌐</span>
+                            World Hierarchy: Population Distribution
+                        </div>
+                        <div class="info-text">Hover over continent slices to filter countries in the motion chart</div>
+                        <div id="sunburst-chart-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script type="module" src="utils.js"></script>
+    <script type="module" src="motion_chart.js"></script>
+    <script type="module" src="choropleth_map.js"></script>
+    <script type="module" src="sunburst.js"></script>
+    <script type="module" src="controls.js"></script>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
 
