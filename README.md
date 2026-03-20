@@ -119,6 +119,7 @@ This view shows the overall dashboard layout with the motion chart, choropleth m
 ![Motion chart](screenshots/motion-chart.jpg)
 
 This visualization presents the Gapminder-style animated scatter plot for comparing countries by GDP, life expectancy, and population.
+It also demonstrates the animated behavior of the visualization when the time controls are active.
 
 ### Synced choropleth map
 ![Synced choropleth map](screenshots/synced-choropleth-map.jpg)
@@ -135,10 +136,6 @@ This hierarchy view shows population distribution by continent and helps filter 
 
 This screenshot shows the custom draggable time slider used to navigate the dashboard timeline.
 
-### Motion chart playback
-![Motion chart playback](screenshots/motion-chart.jpg)
-
-This demonstrates the animated behavior of the visualization when the time controls are active.
 
 ## Technical notes
 - Built with **D3.js** and standard web technologies
